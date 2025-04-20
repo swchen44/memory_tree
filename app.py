@@ -280,14 +280,37 @@ if violations:
 
 # Treemap
 st.subheader("記憶體分布 Treemap")
+
+# 計算每個module的size總和（單位轉換為KB）
+module_sizes = (df_filtered.groupby("symbol_module")["symbol_size"].sum() / 1024).to_dict()
+df_filtered["module_total_size"] = df_filtered["symbol_module"].map(module_sizes)
+
 fig_tree = px.treemap(
     df_filtered,
-    path=["symbol_physical_memory",  "symbol_module", "symbol_name"],
-    values="symbol_cost",
-    color="symbol_cost",
+    path=["symbol_physical_memory", "symbol_module", "symbol_name"],
+    values="symbol_size",  # 改用 symbol_size 作為區塊大小
+    color="symbol_cost",   # 保留 cost 作為顏色區分
     color_continuous_scale="RdBu",
-    hover_data=["symbol_size", "symbol_realtime", "symbol_hw_usage"]
+    hover_data={
+        "symbol_size": ":,.0f",          # 顯示原始大小（bytes）
+        "symbol_realtime": True,
+        "symbol_hw_usage": True,
+        "module_total_size": ":.2f KB"    # 模組總大小（KB）
+    },
+    custom_data=["module_total_size", "symbol_size"]  # 加入原始大小到自訂資料
 )
+
+# 自訂hover樣板，加入bytes和KB的顯示
+fig_tree.update_traces(
+    hovertemplate="""
+    <b>%{label}</b><br>
+    Size: %{customdata[1]:,.0f} bytes<br>
+    Module Total: %{customdata[0]:.2f} KB<br>
+    Cost: %{color}<br>
+    <extra></extra>
+    """
+)
+
 st.plotly_chart(fig_tree, use_container_width=True)
 
 # 新增 folder_name 分析圖表
