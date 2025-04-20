@@ -1,0 +1,16 @@
+docs(all): 加入完整中文 Python docstrings
+
+- 為資料產生模組 data_generation.py 加入完整文件
+- 為測試模組 test_data_generation.py 加入測試說明
+- 補充函數參數與返回值說明
+- 增加中文註解提升可讀性
+
+影響範圍:
+- data_generation.py:
+  * 新增模組說明
+  * 補充各函數文件
+  * 加入記憶體限制說明
+- test_data_generation.py:
+  * 新增測試模組說明
+  * 補充測試案例文件
+  * 加入必要欄位說明
