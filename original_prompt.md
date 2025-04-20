@@ -34,6 +34,17 @@
 - module
 - filename
 
+# prompt 再擴充 
+- 好維護，可讀性在產生程式prompt 那段
+- 產生程式 自動分析問題 
+- 增加報告產出
+
+# others
+1 請把symbol realtime 屬性改為, High/Medium/Low, 
+2 symbol 加一個屬性為HW usage , 值有Yes或No
+3. Issue Analysis Identifying symbols marked realtime=High located in low speed ext_memory1/2
+4. Issue Analysis Identifying symbols marked realtime=Low located in high seepd ilm/dlm/sysram
+5 以上prompt合併
 
 
 
