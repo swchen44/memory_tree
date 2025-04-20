@@ -1,4 +1,3 @@
-
 # Streamlit Dashboard for Symbol Memory Cost Analysis
 
 ## Objective
@@ -13,8 +12,8 @@ Each row in the dataset represents a symbol and contains:
 - `input_section` (code/data/bss)
 - `symbol_address` (hex string)
 - `symbol_size` (int, in bytes)
-- `symbol_protection` (ro/rw/always_power_on/ro_after_write)
-- `symbol_out_section` (e.g., sysram data, ilm_always_power_on)
+- `symbol_output_section` one of [code,data,init,always_power_on,ro_after_write]
+- `symbol_out_section` (e.g., sysram_data, ilm_always_power_on, ilm_data, dlm_data)
 - `symbol_physical_memory`: one of [ilm, dlm, sysram, ext_memory1, ext_memory2]
 - `symbol_realtime` (High / Medium / Low) — manually labeled priority
 - `symbol_access_count` (int, 0–100) — runtime access count, used for inferring potential real-time needs
@@ -80,7 +79,6 @@ Note: a file with filename existed in the one folder_name
 - input/output section
 - realtime priority
 - hardware usage
-- protection type
 
 ---
 

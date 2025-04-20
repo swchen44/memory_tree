@@ -89,13 +89,6 @@ hw_usage_filter = st.sidebar.multiselect(
     default=[]
 )
 
-# 保護類型篩選
-protection_filter = st.sidebar.multiselect(
-    "保護類型",
-    options=sorted(symbol_df["symbol_protection"].unique()),
-    default=[]
-)
-
 # 應用篩選條件
 df_filtered = symbol_df.copy()
 
@@ -113,8 +106,6 @@ if realtime_filter:
     df_filtered = df_filtered[df_filtered["symbol_realtime"].isin(realtime_filter)]
 if hw_usage_filter:
     df_filtered = df_filtered[df_filtered["symbol_hw_usage"].isin(hw_usage_filter)]
-if protection_filter:
-    df_filtered = df_filtered[df_filtered["symbol_protection"].isin(protection_filter)]
 
 # 顯示篩選後的資料筆數
 st.sidebar.info(f"篩選後資料筆數: {len(df_filtered)}")
@@ -214,7 +205,7 @@ if violations:
 st.subheader("記憶體分布 Treemap")
 fig_tree = px.treemap(
     df_filtered,
-    path=["symbol_physical_memory", "symbol_folder_name_for_file", "symbol_module", "symbol_name"],
+    path=["symbol_physical_memory",  "symbol_module", "symbol_name"],
     values="symbol_cost",
     color="symbol_cost",
     color_continuous_scale="RdBu",
