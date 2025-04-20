@@ -66,7 +66,6 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
             - symbol_realtime: 即時性需求
             - symbol_access_count: 存取次數
             - symbol_hw_usage: 硬體使用標記
-            - symbol_cost: 記憶體成本
             - symbol_folder_name_for_file: 資料夾路徑
 
     記憶體限制:
@@ -130,9 +129,6 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
         access_count = np.random.randint(0, 101)
         hw_usage = random.choice(["Yes", "No"])
         
-        # 計算成本
-        cost = size * memory_weights[memory]
-        
         records.append({
             "symbol_name": symbol_name,
             "symbol_module": module,
@@ -146,7 +142,6 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
             "symbol_realtime": realtime,
             "symbol_access_count": access_count,
             "symbol_hw_usage": hw_usage,
-            "symbol_cost": cost,
             "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
         })
 
@@ -197,7 +192,6 @@ def generate_small_symbol(size, memory, memory_weights, modules, filenames):
         "symbol_realtime": "Low",
         "symbol_access_count": np.random.randint(0, 33),
         "symbol_hw_usage": "No",
-        "symbol_cost": size * memory_weights[memory],
         "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
     }
 
