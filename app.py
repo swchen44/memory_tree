@@ -180,51 +180,39 @@ if hw_usage_filter:
 st.sidebar.info(f"篩選後資料筆數: {len(df_filtered)}")
 
 # 異常偵測區
-logger.info("開始執行異常偵測")
 st.subheader("自動偵測配置異常")
+violations = []
 
-def check_violations(df):
-    """
-    檢查記憶體配置規則違規。
+# 初始化所有違規變數
+v1 = v2 = v3 = pd.DataFrame()
+v4_high_mismatch = v4_low_mismatch = pd.DataFrame()
+v4 = pd.DataFrame()
 
-    Args:
-        df (pd.DataFrame): 要檢查的資料框架
+# 規則 1: High realtime in ext_memory
+v1 = df_filtered[(df_filtered["symbol_realtime"] == "High") & df_filtered["symbol_physical_memory"].str.contains("ext")]
+if not v1.empty:
+    logger.warning(f"發現 {len(v1)} 個 High Realtime 符號在低速記憶體中")
+    violations.append(("High Realtime 符號放入低速記憶體", v1))
 
-    Returns:
-        list: 違規清單，每個元素為 (violation_name, violation_df) 的 tuple
-    """
-    violations = []
-    
-    # 規則 1: High realtime in ext_memory
-    v1 = df[(df["symbol_realtime"] == "High") & df["symbol_physical_memory"].str.contains("ext")]
-    if not v1.empty:
-        logger.warning(f"發現 {len(v1)} 個 High Realtime 符號在低速記憶體中")
-        violations.append(("High Realtime 符號放入低速記憶體", v1))
-    
-    # 規則 2: Low realtime in high-cost memory
-    v2 = df[(df["symbol_realtime"] == "Low") & df["symbol_physical_memory"].isin(["ilm", "dlm", "sysram"])]
-    if not v2.empty:
-        logger.warning(f"發現 {len(v2)} 個 Low Realtime 符號在高速記憶體中")
-        violations.append(("Low Realtime 符號放入高速記憶體", v2))
-    
-    # 規則 3: hw_usage = Yes 放入 ext memory
-    v3 = df[(df["symbol_hw_usage"] == "Yes") & df["symbol_physical_memory"].str.contains("ext")]
-    if not v3.empty:
-        logger.warning(f"發現 {len(v3)} 個 HW Usage 符號在外部記憶體中")
-        violations.append(("HW Usage 符號放入外部記憶體", v3))
-    
-    # 規則 4: symbol_realtime 與 symbol_access_count 不一致
-    # High realtime → access count 應偏高 (> 66)，Low realtime → 應偏低 (< 33)
-    v4_high_mismatch = df[(df["symbol_realtime"] == "High") & (df["symbol_access_count"] < 33)]
-    v4_low_mismatch = df[(df["symbol_realtime"] == "Low") & (df["symbol_access_count"] > 66)]
-    v4 = pd.concat([v4_high_mismatch, v4_low_mismatch])
-    if not v4.empty:
-        logger.warning(f"發現 {len(v4)} 個 Realtime 等級與存取次數不一致的符號")
-        violations.append(("Realtime 等級與存取次數不一致", v4))
-    
-    return violations
+# 規則 2: Low realtime in high-cost memory
+v2 = df_filtered[(df_filtered["symbol_realtime"] == "Low") & df_filtered["symbol_physical_memory"].isin(["ilm", "dlm", "sysram"])]
+if not v2.empty:
+    logger.warning(f"發現 {len(v2)} 個 Low Realtime 符號在高速記憶體中")
+    violations.append(("Low Realtime 符號放入高速記憶體", v2))
 
-violations = check_violations(df_filtered)
+# 規則 3: hw_usage = Yes 放入 ext memory
+v3 = df_filtered[(df_filtered["symbol_hw_usage"] == "Yes") & df_filtered["symbol_physical_memory"].str.contains("ext")]
+if not v3.empty:
+    logger.warning(f"發現 {len(v3)} 個 HW Usage 符號在外部記憶體中")
+    violations.append(("HW Usage 符號放入外部記憶體", v3))
+
+# 規則 4: symbol_realtime 與 symbol_access_count 不一致
+v4_high_mismatch = df_filtered[(df_filtered["symbol_realtime"] == "High") & (df_filtered["symbol_access_count"] < 33)]
+v4_low_mismatch = df_filtered[(df_filtered["symbol_realtime"] == "Low") & (df_filtered["symbol_access_count"] > 66)]
+v4 = pd.concat([v4_high_mismatch, v4_low_mismatch])
+if not v4.empty:
+    logger.warning(f"發現 {len(v4)} 個 Realtime 等級與存取次數不一致的符號")
+    violations.append(("Realtime 等級與存取次數不一致", v4))
 
 # KPI 區
 st.subheader("總覽 KPI")
