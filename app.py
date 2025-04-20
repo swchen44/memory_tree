@@ -55,9 +55,6 @@ if not v2.empty:
 v3 = symbol_df[(symbol_df["symbol_hw_usage"] == "Yes") & symbol_df["symbol_physical_memory"].str.contains("ext")]
 if not v3.empty:
     violations.append(("HW Usage 符號放入外部記憶體", v3))
-v3 = symbol_df[(symbol_df["symbol_hw_usage"] == "Yes") & symbol_df["symbol_physical_memory"].str.contains("ext")]
-if not v3.empty:
-    violations.append(("HW Usage 符號放入外部記憶體", v3))
 
 # 規則 4: symbol_realtime 與 symbol_access_count 不一致
 # High realtime → access count 應偏高 (> 66)，Low realtime → 應偏低 (< 33)

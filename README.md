@@ -35,6 +35,40 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## 執行測試
+
+1. 安裝測試依賴：
+```bash
+pip install pytest
+```
+
+2. 執行所有測試：
+```bash
+pytest tests/
+```
+
+3. 執行特定測試檔案：
+```bash
+pytest tests/test_data_generation.py
+```
+
+4. 詳細測試輸出：
+```bash
+pytest -v tests/
+```
+
+5. 查看測試覆蓋率：
+```bash
+pytest --cov=. tests/
+```
+
+測試檢查項目：
+- 資料生成功能
+- 符號成本計算
+- 記憶體限制檢查
+- 必要欄位驗證
+- CSV 匯出功能
+
 ## 資料模型
 
 分析基於以下符號屬性：
