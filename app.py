@@ -41,6 +41,30 @@ if st.button("產生測試資料 symbols.csv"):
     generate_symbol_data(num_symbols=1000)
     st.success("測試資料已產生 data/symbols.csv")
 
+# 檔案上傳功能
+uploaded_file = st.file_uploader("上傳 CSV 檔案", type="csv")
+if uploaded_file is not None:
+    try:
+        # 儲存上傳的檔案
+        with open("data/symbols.csv", "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        logger.info(f"使用者上傳檔案: {uploaded_file.name}")
+        
+        # 顯示檔案資訊
+        file_stats = os.stat("data/symbols.csv")
+        st.success(f"""
+        檔案上傳成功！
+        - 檔案名稱: {uploaded_file.name}
+        - 檔案大小: {file_stats.st_size / 1024:.2f} KB
+        - 上傳時間: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}
+        """)
+        
+        # 清除快取以重新載入資料
+        st.cache_data.clear()
+    except Exception as e:
+        logger.error(f"檔案上傳失敗: {str(e)}")
+        st.error("檔案上傳失敗，請確認檔案格式是否正確")
+
 # 載入資料
 @st.cache_data
 def load_data():
