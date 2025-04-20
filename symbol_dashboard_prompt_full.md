@@ -16,7 +16,8 @@ Each row in the dataset represents a symbol and contains:
 - `symbol_protection` (ro/rw/always_power_on/ro_after_write)
 - `symbol_out_section` (e.g., sysram data, ilm_always_power_on)
 - `symbol_physical_memory`: one of [ilm, dlm, sysram, ext_memory1, ext_memory2]
-- `symbol_realtime` (High / Medium / Low)
+- `symbol_realtime` (High / Medium / Low) — manually labeled priority
+- `symbol_access_count` (int, 0–100) — runtime access count, used for inferring potential real-time needs
 - `symbol_hw_usage` (Yes / No)
 - `symbol_filename` (string)
 - `symbol_module` (string)
@@ -107,6 +108,7 @@ Steps to create test data:
    - 500–2000 symbols
 
 3. Assign each symbol:
+   - assign `symbol_access_count` randomly from 0 to 100
    - to a module and a filename
    - a size (e.g., 10–1000 bytes)
    - to a memory zone and out_section
