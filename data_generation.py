@@ -20,7 +20,24 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
     logger = setup_logging()
     logger.info(f"Generating {num_symbols} synthetic symbols...")
 
-    memory_types = ["ilm", "dlm", "sysram", "ext_memory1", "ext_memory2"]
+    # 定義記憶體區域權重和最大大小
+    memory_weights = {
+        "ilm": 10,
+        "dlm": 10,
+        "sysram": 8,
+        "ext_memory1": 2,
+        "ext_memory2": 2
+    }
+    
+    memory_max_size = {
+        "ilm": 64 * 1024,      # 64KB
+        "dlm": 64 * 1024,      # 64KB
+        "sysram": 256 * 1024,  # 256KB
+        "ext_memory1": 1024 * 1024,  # 1MB
+        "ext_memory2": 1024 * 1024   # 1MB
+    }
+
+    memory_types = list(memory_weights.keys())
     out_sections = [
         "ilm", "dlm", "ilm_always_power_on", "dlm_always_power_on",
         "sysram_code", "sysram_data",
@@ -43,7 +60,7 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
         filename = random.choice(filenames)
         input_section = random.choice(["code", "data", "bss"])
         size = np.random.randint(16, 2048)
-        memory = random.choices(memory_types, weights=[5, 5, 8, 10, 10])[0]
+        memory = random.choices(memory_types, weights=[memory_weights[m] for m in memory_types])[0]
         out_section = random.choice(out_sections)
         address = hex(np.random.randint(0x80000000, 0x8FFFFFFF))
         protection = random.choice(protection_modes)
@@ -63,7 +80,6 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
             "symbol_protection": protection,
             "symbol_realtime": realtime,
             "symbol_access_count": access_count,
-            "symbol_hw_usage": hw_usage
         })
 
     os.makedirs(os.path.dirname(outfile), exist_ok=True)

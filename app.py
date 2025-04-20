@@ -84,6 +84,29 @@ with st.container():
     k5.metric("異常筆數", violation_count)
     k6.metric("Realtime 標記與存取不一致", len(v4), delta_color="inverse" if len(v4) > 0 else "off")
 
+# 記憶體使用量監控
+memory_limits = {
+    "ilm": 64 * 1024,
+    "dlm": 64 * 1024,
+    "sysram": 256 * 1024,
+    "ext_memory1": 1024 * 1024,
+    "ext_memory2": 1024 * 1024
+}
+
+mem_usage = symbol_df.groupby("symbol_physical_memory")["symbol_size"].sum()
+mem_usage_pct = {mem: (usage/memory_limits[mem])*100 
+                 for mem, usage in mem_usage.items()}
+
+# 在 KPI 區域後顯示記憶體使用量
+st.subheader("記憶體使用量")
+cols = st.columns(len(memory_limits))
+for i, (mem, usage_pct) in enumerate(mem_usage_pct.items()):
+    cols[i].metric(
+        f"{mem} 使用率",
+        f"{usage_pct:.1f}%",
+        delta_color="inverse" if usage_pct > 90 else "off"
+    )
+
 # 成本最多模組排行
 st.subheader("成本最高模組排行 (Top 10)")
 mod_rank = symbol_df.groupby("symbol_module")["symbol_cost"].sum().nlargest(10).reset_index()
