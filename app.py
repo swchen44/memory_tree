@@ -254,87 +254,94 @@ for i, (mem, usage_pct) in enumerate(mem_usage_pct.items()):
         delta_color="inverse" if usage_pct > 90 else "off"
     )
 
-# 成本最多模組排行
-st.subheader("成本最高模組排行 (Top 10)")
-mod_rank = df_filtered.groupby("symbol_module")["symbol_cost"].sum().nlargest(10).reset_index()
-fig_mod = px.bar(mod_rank, x="symbol_module", y="symbol_cost", text_auto=True)
-st.plotly_chart(fig_mod, use_container_width=True)
+# 使用 tabs 來組織圖表
+tab1, tab2, tab3, tab4 = st.tabs([
+    "成本分析", "記憶體分布", "異常分析", "詳細資料"
+])
 
-# 圓餅圖（記憶體使用成本佔比）
-st.subheader("記憶體區域成本佔比 Pie")
-mem_cost = df_filtered.groupby("symbol_physical_memory")["symbol_cost"].sum().reset_index()
-fig_pie = px.pie(mem_cost, names="symbol_physical_memory", values="symbol_cost", title="Memory Usage Share")
-st.plotly_chart(fig_pie, use_container_width=True)
+# Tab 1: 成本分析
+with tab1:
+    # 成本最多模組排行
+    st.subheader("成本最高模組排行 (Top 10)")
+    mod_rank = df_filtered.groupby("symbol_module")["symbol_cost"].sum().nlargest(10).reset_index()
+    fig_mod = px.bar(mod_rank, x="symbol_module", y="symbol_cost", text_auto=True)
+    st.plotly_chart(fig_mod, use_container_width=True)
 
-# 違規熱力圖
-st.subheader("模組 × 規則違規熱力圖")
-violation_heat = pd.DataFrame()
-if violations:
-    for title, df_ in violations:
-        heat_part = df_.groupby("symbol_module")["symbol_name"].count().reset_index()
-        heat_part.columns = ["symbol_module", title]
-        violation_heat = pd.merge(violation_heat, heat_part, on="symbol_module", how="outer") if not violation_heat.empty else heat_part
-    violation_heat = violation_heat.fillna(0).set_index("symbol_module")
-    fig_heat = px.imshow(violation_heat, text_auto=True, aspect="auto", color_continuous_scale="Reds")
-    st.plotly_chart(fig_heat, use_container_width=True)
+    # 圓餅圖（記憶體使用成本佔比）
+    st.subheader("記憶體區域成本佔比")
+    mem_cost = df_filtered.groupby("symbol_physical_memory")["symbol_cost"].sum().reset_index()
+    fig_pie = px.pie(mem_cost, names="symbol_physical_memory", values="symbol_cost", title="Memory Usage Share")
+    st.plotly_chart(fig_pie, use_container_width=True)
 
-# Treemap
-st.subheader("記憶體分布 Treemap")
+    # 資料夾成本分析
+    st.subheader("資料夾成本分析")
+    folder_cost = df_filtered.groupby("symbol_folder_name_for_file")["symbol_cost"].sum().sort_values(ascending=False)
+    fig_folder = px.bar(folder_cost.reset_index(), 
+                       x="symbol_folder_name_for_file", 
+                       y="symbol_cost",
+                       title="各資料夾成本分布",
+                       labels={"symbol_folder_name_for_file": "資料夾", "symbol_cost": "成本"})
+    fig_folder.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(fig_folder, use_container_width=True)
 
-# 計算每個module的size總和（單位轉換為KB）
-module_sizes = (df_filtered.groupby("symbol_module")["symbol_size"].sum() / 1024).to_dict()
-df_filtered["module_total_size"] = df_filtered["symbol_module"].map(module_sizes)
+# Tab 2: 記憶體分布
+with tab2:
+    st.subheader("記憶體分布 Treemap")
+    module_sizes = (df_filtered.groupby("symbol_module")["symbol_size"].sum() / 1024).to_dict()
+    df_filtered["module_total_size"] = df_filtered["symbol_module"].map(module_sizes)
 
-fig_tree = px.treemap(
-    df_filtered,
-    path=["symbol_physical_memory", "symbol_module", "symbol_name"],
-    values="symbol_size",  # 改用 symbol_size 作為區塊大小
-    color="symbol_cost",   # 保留 cost 作為顏色區分
-    color_continuous_scale="RdBu",
-    hover_data={
-        "symbol_size": ":,.0f",          # 顯示原始大小（bytes）
-        "symbol_realtime": True,
-        "symbol_hw_usage": True,
-        "module_total_size": ":.2f KB"    # 模組總大小（KB）
-    },
-    custom_data=["module_total_size", "symbol_size"]  # 加入原始大小到自訂資料
-)
+    fig_tree = px.treemap(
+        df_filtered,
+        path=["symbol_physical_memory", "symbol_module", "symbol_name"],
+        values="symbol_size",  # 改用 symbol_size 作為區塊大小
+        color="symbol_cost",   # 保留 cost 作為顏色區分
+        color_continuous_scale="RdBu",
+        hover_data={
+            "symbol_size": ":,.0f",          # 顯示原始大小（bytes）
+            "symbol_realtime": True,
+            "symbol_hw_usage": True,
+            "module_total_size": ":.2f KB"    # 模組總大小（KB）
+        },
+        custom_data=["module_total_size", "symbol_size"]  # 加入原始大小到自訂資料
+    )
 
-# 自訂hover樣板，加入bytes和KB的顯示
-fig_tree.update_traces(
-    hovertemplate="""
-    <b>%{label}</b><br>
-    Size: %{customdata[1]:,.0f} bytes<br>
-    Module Total: %{customdata[0]:.2f} KB<br>
-    Cost: %{color}<br>
-    <extra></extra>
-    """
-)
+    # 自訂hover樣板，加入bytes和KB的顯示
+    fig_tree.update_traces(
+        hovertemplate="""
+        <b>%{label}</b><br>
+        Size: %{customdata[1]:,.0f} bytes<br>
+        Module Total: %{customdata[0]:.2f} KB<br>
+        Cost: %{color}<br>
+        <extra></extra>
+        """
+    )
 
-st.plotly_chart(fig_tree, use_container_width=True)
+    st.plotly_chart(fig_tree, use_container_width=True)
 
-# 新增 folder_name 分析圖表
-st.subheader("資料夾成本分析")
-folder_cost = df_filtered.groupby("symbol_folder_name_for_file")["symbol_cost"].sum().sort_values(ascending=False)
-fig_folder = px.bar(folder_cost.reset_index(), 
-                   x="symbol_folder_name_for_file", 
-                   y="symbol_cost",
-                   title="各資料夾成本分布",
-                   labels={"symbol_folder_name_for_file": "資料夾", "symbol_cost": "成本"})
-fig_folder.update_layout(xaxis_tickangle=-45)
-st.plotly_chart(fig_folder, use_container_width=True)
+# Tab 3: 異常分析
+with tab3:
+    st.subheader("模組 × 規則違規熱力圖")
+    violation_heat = pd.DataFrame()
+    if violations:
+        for title, df_ in violations:
+            heat_part = df_.groupby("symbol_module")["symbol_name"].count().reset_index()
+            heat_part.columns = ["symbol_module", title]
+            violation_heat = pd.merge(violation_heat, heat_part, on="symbol_module", how="outer") if not violation_heat.empty else heat_part
+        violation_heat = violation_heat.fillna(0).set_index("symbol_module")
+        fig_heat = px.imshow(violation_heat, text_auto=True, aspect="auto", color_continuous_scale="Reds")
+        st.plotly_chart(fig_heat, use_container_width=True)
 
-# Symbol 表格
-st.subheader("Symbol 細節表")
-st.dataframe(df_filtered, use_container_width=True)
+        # 顯示異常表格
+        for title, df_ in violations:
+            st.markdown(f"### {title} ({len(df_)})")
+            st.dataframe(df_, use_container_width=True)
+    else:
+        st.success("未偵測到異常配置！")
 
-# 顯示異常表格
-if violations:
-    for title, df_ in violations:
-        st.markdown(f"### {title} ({len(df_)})")
-        st.dataframe(df_, use_container_width=True)
-else:
-    st.success("未偵測到異常配置！")
+# Tab 4: 詳細資料
+with tab4:
+    st.subheader("Symbol 細節表")
+    st.dataframe(df_filtered, use_container_width=True)
 
 def generate_violation_report(violations):
     """
