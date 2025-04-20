@@ -37,44 +37,126 @@ if symbol_df.empty:
     st.warning("請先上傳或產生測試資料 symbols.csv")
     st.stop()
 
+# 新增篩選器區域
+st.sidebar.header("資料篩選")
+
+# 記憶體區域篩選
+memory_filter = st.sidebar.multiselect(
+    "記憶體區域",
+    options=sorted(symbol_df["symbol_physical_memory"].unique()),
+    default=[]
+)
+
+# 模組篩選
+module_filter = st.sidebar.multiselect(
+    "模組",
+    options=sorted(symbol_df["symbol_module"].unique()),
+    default=[]
+)
+
+# 資料夾篩選
+folder_filter = st.sidebar.multiselect(
+    "資料夾",
+    options=sorted(symbol_df["symbol_folder_name_for_file"].unique()),
+    default=[]
+)
+
+# 檔案名稱篩選
+file_filter = st.sidebar.multiselect(
+    "檔案名稱",
+    options=sorted(symbol_df["symbol_filename"].unique()),
+    default=[]
+)
+
+# Section 篩選
+section_filter = st.sidebar.multiselect(
+    "Section",
+    options=sorted(symbol_df["input_section"].unique()),
+    default=[]
+)
+
+# Realtime 優先級篩選
+realtime_filter = st.sidebar.multiselect(
+    "即時性需求",
+    options=["High", "Medium", "Low"],
+    default=[]
+)
+
+# 硬體使用篩選
+hw_usage_filter = st.sidebar.multiselect(
+    "硬體使用",
+    options=["Yes", "No"],
+    default=[]
+)
+
+# 保護類型篩選
+protection_filter = st.sidebar.multiselect(
+    "保護類型",
+    options=sorted(symbol_df["symbol_protection"].unique()),
+    default=[]
+)
+
+# 應用篩選條件
+df_filtered = symbol_df.copy()
+
+if memory_filter:
+    df_filtered = df_filtered[df_filtered["symbol_physical_memory"].isin(memory_filter)]
+if module_filter:
+    df_filtered = df_filtered[df_filtered["symbol_module"].isin(module_filter)]
+if folder_filter:
+    df_filtered = df_filtered[df_filtered["symbol_folder_name_for_file"].isin(folder_filter)]
+if file_filter:
+    df_filtered = df_filtered[df_filtered["symbol_filename"].isin(file_filter)]
+if section_filter:
+    df_filtered = df_filtered[df_filtered["input_section"].isin(section_filter)]
+if realtime_filter:
+    df_filtered = df_filtered[df_filtered["symbol_realtime"].isin(realtime_filter)]
+if hw_usage_filter:
+    df_filtered = df_filtered[df_filtered["symbol_hw_usage"].isin(hw_usage_filter)]
+if protection_filter:
+    df_filtered = df_filtered[df_filtered["symbol_protection"].isin(protection_filter)]
+
+# 顯示篩選後的資料筆數
+st.sidebar.info(f"篩選後資料筆數: {len(df_filtered)}")
+
 # 異常偵測區
 st.subheader("自動偵測配置異常")
 violations = []
 
 # 規則 1: High realtime in ext_memory
-v1 = symbol_df[(symbol_df["symbol_realtime"] == "High") & symbol_df["symbol_physical_memory"].str.contains("ext")]
+v1 = df_filtered[(df_filtered["symbol_realtime"] == "High") & df_filtered["symbol_physical_memory"].str.contains("ext")]
 if not v1.empty:
     violations.append(("High Realtime 符號放入低速記憶體", v1))
 
 # 規則 2: Low realtime in high-cost memory
-v2 = symbol_df[(symbol_df["symbol_realtime"] == "Low") & symbol_df["symbol_physical_memory"].isin(["ilm", "dlm", "sysram"])]
+v2 = df_filtered[(df_filtered["symbol_realtime"] == "Low") & df_filtered["symbol_physical_memory"].isin(["ilm", "dlm", "sysram"])]
 if not v2.empty:
     violations.append(("Low Realtime 符號放入高速記憶體", v2))
 
 # 規則 3: hw_usage = Yes 放入 ext memory
-v3 = symbol_df[(symbol_df["symbol_hw_usage"] == "Yes") & symbol_df["symbol_physical_memory"].str.contains("ext")]
+v3 = df_filtered[(df_filtered["symbol_hw_usage"] == "Yes") & df_filtered["symbol_physical_memory"].str.contains("ext")]
 if not v3.empty:
     violations.append(("HW Usage 符號放入外部記憶體", v3))
 
 # 規則 4: symbol_realtime 與 symbol_access_count 不一致
 # High realtime → access count 應偏高 (> 66)，Low realtime → 應偏低 (< 33)
-v4_high_mismatch = symbol_df[(symbol_df["symbol_realtime"] == "High") & (symbol_df["symbol_access_count"] < 33)]
-v4_low_mismatch = symbol_df[(symbol_df["symbol_realtime"] == "Low") & (symbol_df["symbol_access_count"] > 66)]
+v4_high_mismatch = df_filtered[(df_filtered["symbol_realtime"] == "High") & (df_filtered["symbol_access_count"] < 33)]
+v4_low_mismatch = df_filtered[(df_filtered["symbol_realtime"] == "Low") & (df_filtered["symbol_access_count"] > 66)]
 v4 = pd.concat([v4_high_mismatch, v4_low_mismatch])
 if not v4.empty:
     violations.append(("Realtime 等級與存取次數不一致", v4))
 
 # KPI 區
 st.subheader("總覽 KPI")
-total_cost = symbol_df["symbol_cost"].sum()
-total_size = symbol_df["symbol_size"].sum()
-realtime_high_count = len(symbol_df[symbol_df["symbol_realtime"] == "High"])
-hw_usage_count = len(symbol_df[symbol_df["symbol_hw_usage"] == "Yes"])
+total_cost = df_filtered["symbol_cost"].sum()
+total_size = df_filtered["symbol_size"].sum()
+realtime_high_count = len(df_filtered[df_filtered["symbol_realtime"] == "High"])
+hw_usage_count = len(df_filtered[df_filtered["symbol_hw_usage"] == "Yes"])
 violation_count = sum(len(df) for _, df in violations)
 
 with st.container():
     k1, k2, k3, k4, k5, k6 = st.columns(6)
-    k1.metric("符號數", len(symbol_df))
+    k1.metric("符號數", len(df_filtered))
     k2.metric("總大小 (KB)", f"{total_size // 1024} KB")
     k3.metric("總成本", f"{int(total_cost):,}")
     k4.metric("High Realtime 符號數", realtime_high_count)
@@ -90,7 +172,7 @@ memory_limits = {
     "ext_memory2": 1024 * 1024
 }
 
-mem_usage = symbol_df.groupby("symbol_physical_memory")["symbol_size"].sum()
+mem_usage = df_filtered.groupby("symbol_physical_memory")["symbol_size"].sum()
 mem_usage_pct = {mem: (usage/memory_limits[mem])*100 
                  for mem, usage in mem_usage.items()}
 
@@ -106,13 +188,13 @@ for i, (mem, usage_pct) in enumerate(mem_usage_pct.items()):
 
 # 成本最多模組排行
 st.subheader("成本最高模組排行 (Top 10)")
-mod_rank = symbol_df.groupby("symbol_module")["symbol_cost"].sum().nlargest(10).reset_index()
+mod_rank = df_filtered.groupby("symbol_module")["symbol_cost"].sum().nlargest(10).reset_index()
 fig_mod = px.bar(mod_rank, x="symbol_module", y="symbol_cost", text_auto=True)
 st.plotly_chart(fig_mod, use_container_width=True)
 
 # 圓餅圖（記憶體使用成本佔比）
 st.subheader("記憶體區域成本佔比 Pie")
-mem_cost = symbol_df.groupby("symbol_physical_memory")["symbol_cost"].sum().reset_index()
+mem_cost = df_filtered.groupby("symbol_physical_memory")["symbol_cost"].sum().reset_index()
 fig_pie = px.pie(mem_cost, names="symbol_physical_memory", values="symbol_cost", title="Memory Usage Share")
 st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -131,8 +213,8 @@ if violations:
 # Treemap
 st.subheader("記憶體分布 Treemap")
 fig_tree = px.treemap(
-    symbol_df,
-    path=["symbol_physical_memory", "symbol_module", "symbol_name"],
+    df_filtered,
+    path=["symbol_physical_memory", "symbol_folder_name_for_file", "symbol_module", "symbol_name"],
     values="symbol_cost",
     color="symbol_cost",
     color_continuous_scale="RdBu",
@@ -140,9 +222,20 @@ fig_tree = px.treemap(
 )
 st.plotly_chart(fig_tree, use_container_width=True)
 
+# 新增 folder_name 分析圖表
+st.subheader("資料夾成本分析")
+folder_cost = df_filtered.groupby("symbol_folder_name_for_file")["symbol_cost"].sum().sort_values(ascending=False)
+fig_folder = px.bar(folder_cost.reset_index(), 
+                   x="symbol_folder_name_for_file", 
+                   y="symbol_cost",
+                   title="各資料夾成本分布",
+                   labels={"symbol_folder_name_for_file": "資料夾", "symbol_cost": "成本"})
+fig_folder.update_layout(xaxis_tickangle=-45)
+st.plotly_chart(fig_folder, use_container_width=True)
+
 # Symbol 表格
 st.subheader("Symbol 細節表")
-st.dataframe(symbol_df, use_container_width=True)
+st.dataframe(df_filtered, use_container_width=True)
 
 # 顯示異常表格
 if violations:
@@ -153,7 +246,7 @@ else:
     st.success("未偵測到異常配置！")
 
 # 匯出功能（含異常報表與 Markdown 報告）
-st.download_button("下載資料 CSV", symbol_df.to_csv(index=False).encode("utf-8-sig"), file_name="symbols.csv")
+st.download_button("下載資料 CSV", df_filtered.to_csv(index=False).encode("utf-8-sig"), file_name="symbols.csv")
 
 if violations:
     all_violations_df = pd.concat([df for _, df in violations], ignore_index=True)

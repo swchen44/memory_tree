@@ -21,6 +21,7 @@ Each row in the dataset represents a symbol and contains:
 - `symbol_hw_usage` (Yes / No)
 - `symbol_filename` (string)
 - `symbol_module` (string)
+- `symbol_folder_name_for_file` one of [customer, custom/system,core/mlm, core/rlm, core/system, core/middle, open_core/mlm, open_core/rlm, open_core/system, open_core/middle, base/hal, base/prj_ram, base/exthal,open_base/hal, open_base/prj_ram, open_base/exthal]
 
 ---
 
@@ -30,6 +31,7 @@ Each row in the dataset represents a symbol and contains:
     - SYSRAM: 8
     - EXT MEMORY1/2: 2
 - `module_cost` = sum of all symbol_cost in that module
+- `symbol_cost` do not be generated in data generation and data file.
 
 ---
 
@@ -40,11 +42,13 @@ Nested relationships for visualization (from coarse to fine):
 physical_memory
 └── symbol_out_section
     └── module
-        └── filename
-            └── symbol_name
+        └── folder_name
+            └── filename
+                └── symbol_name
 ```
 
-Note: modules and filenames may span multiple memory regions.
+Note: modules , folder_name and filenames may span multiple memory regions.
+Note: a file with filename existed in the one folder_name
 
 ---
 
@@ -71,6 +75,7 @@ Note: modules and filenames may span multiple memory regions.
 ## Filtering Options
 - memory region
 - module
+- folder_name_for_file
 - filename
 - input/output section
 - realtime priority
@@ -109,18 +114,15 @@ Steps to create test data:
 
 3. Assign each symbol:
    - assign `symbol_access_count` randomly from 0 to 100
-   - to a module and a filename
+   - to a module , a filename, folder_name_for_file
    - a size (e.g., 10–1000 bytes)
    - to a memory zone and out_section
    - `realtime`: High / Medium / Low
    - `hw_usage`: Yes / No
-   - compute cost using `symbol_size * memory_cost`
+   
 
-4. Calculate:
-   - module-level aggregated cost
-   - total memory usage per zone
 
-5. Export as a DataFrame for Streamlit use
+4. Export as a DataFrame for Streamlit use
 
 ---
 

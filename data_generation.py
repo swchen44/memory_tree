@@ -16,6 +16,15 @@ def setup_logging():
     )
     return logging.getLogger("data_gen")
 
+# 新增 folder_name 列表
+FOLDER_NAMES = [
+    "customer", "custom/system",
+    "core/mlm", "core/rlm", "core/system", "core/middle",
+    "open_core/mlm", "open_core/rlm", "open_core/system", "open_core/middle",
+    "base/hal", "base/prj_ram", "base/exthal",
+    "open_base/hal", "open_base/prj_ram", "open_base/exthal"
+]
+
 def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
     logger = setup_logging()
     logger.info(f"Generating {num_symbols} synthetic symbols...")
@@ -87,7 +96,8 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
             "symbol_realtime": realtime,
             "symbol_access_count": access_count,
             "symbol_hw_usage": hw_usage,
-            "symbol_cost": cost
+            "symbol_cost": cost,
+            "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
         })
 
     # 確保產生足夠的資料
@@ -124,7 +134,8 @@ def generate_small_symbol(size, memory, memory_weights, modules, filenames):
         "symbol_realtime": "Low",
         "symbol_access_count": np.random.randint(0, 33),
         "symbol_hw_usage": "No",
-        "symbol_cost": size * memory_weights[memory]
+        "symbol_cost": size * memory_weights[memory],
+        "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
     }
 
 if __name__ == "__main__":
