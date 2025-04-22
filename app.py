@@ -32,17 +32,27 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-# UI 標題
-st.set_page_config(page_title="Symbol Memory Dashboard", layout="wide")
-st.title("Symbol Memory Dashboard")
+# 設置側邊欄
+st.set_page_config(page_title="Symbol Memory Analysis", page_icon="📊", layout="wide")
 
-# 測試資料按鈕
-if st.button("產生測試資料 symbols.csv"):
-    generate_symbol_data(num_symbols=1000)
-    st.success("測試資料已產生 data/symbols.csv")
+# 側邊欄導航
+#st.sidebar.title("導航選單")
+#selected_page = st.sidebar.radio(
+#    "選擇頁面",
+#    options=["首頁", "符號分析"],
+#    index=0
+#)
 
-# 檔案上傳功能
-uploaded_file = st.file_uploader("上傳 CSV 檔案", type="csv")
+#if selected_page == "符號分析":
+#    st.switch_page("1_symbol_analysis.py")
+
+# 顯示主頁內容
+st.title("Symbol Memory Analysis")
+st.write("歡迎使用記憶體分析工具")
+
+# 資料上傳區域
+uploaded_file = st.file_uploader("上傳 CSV 檔案", type=["csv"])
+
 if uploaded_file is not None:
     try:
         # 儲存上傳的檔案
@@ -61,9 +71,20 @@ if uploaded_file is not None:
         
         # 清除快取以重新載入資料
         st.cache_data.clear()
+        df = pd.read_csv("data/symbols.csv")
+        st.session_state['symbol_data'] = df
+        st.write("您可以使用左側選單進行更深入的分析。")
     except Exception as e:
         logger.error(f"檔案上傳失敗: {str(e)}")
         st.error("檔案上傳失敗，請確認檔案格式是否正確")
+
+# 測試資料產生按鈕
+if st.button("產生測試資料"):
+    generate_symbol_data(num_symbols=1000)
+    df = pd.read_csv("data/symbols.csv")
+    st.session_state['symbol_data'] = df
+    st.success("測試資料已產生！")
+    st.write("您可以使用左側選單進行更深入的分析。")
 
 # 載入資料
 @st.cache_data
@@ -93,7 +114,7 @@ def load_data():
         df = pd.read_csv(path)
         logger.info(f"成功載入資料，共 {len(df)} 筆記錄")
         df["symbol_cost"] = df["symbol_size"] * df["symbol_physical_memory"].map({
-            "ilm": 10, "dlm": 10, "sysram": 8, "ext_memory1": 2, "ext_memory2": 2
+            "ilm": 10, "dlm": 10, "sysram": 9, "ext_memory1": 2, "ext_memory2": 2
         }).fillna(1)
         return df
     except Exception as e:

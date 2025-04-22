@@ -13,12 +13,22 @@ from app import load_data
 st.set_page_config(page_title="Symbol Analysis", page_icon="🔍", layout="wide")
 st.title("Symbol Analysis")
 
+# 側邊欄導航
+#selected_page = st.sidebar.radio(
+#    "選擇頁面",
+#    options=["首頁", "符號分析"],
+#    index=1  # 預設選擇符號分析
+#)
+
+#if selected_page == "首頁":
+#    st.switch_page("app.py")
+
 # 載入資料
 symbol_df = load_data()
 if symbol_df.empty:
     st.warning("請先回到首頁上傳或產生測試資料")
-    if st.button("回到首頁"):
-        st.switch_page("app.py")
+#if st.button("回到首頁"):
+#   st.switch_page("app.py")
     st.stop()
 
 # 篩選器設定
