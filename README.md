@@ -4,11 +4,13 @@
 
 ## 功能特點
 
-- 🎯 即時分析符號記憶體配置成本
-- 📊 多樣化視覺化圖表（TreeMap、Sunburst、熱圖等）
-- 🔍 強大的過濾和排序功能
-- 📝 自動問題檢測與報告生成
-- 💾 支援多種記憶體區域分析（ILM、DLM、SYSRAM、外部記憶體）
+已實現功能：
+- ✅ 多維度篩選（記憶體區域、模組、資料夾、檔案、Section、即時性、硬體使用）
+- ✅ 成本分析（模組排行、記憶體佔比、資料夾分析）
+- ✅ 記憶體分布 TreeMap 視覺化
+- ✅ 異常檢測（即時性配置、硬體使用）
+- ✅ 詳細資料查看與匯出
+- ✅ CSV 和 Markdown 報告產生
 
 ## 安裝需求
 
@@ -39,28 +41,64 @@ streamlit run app.py
 
 1. 安裝測試依賴：
 ```bash
-pip install pytest
+pip install pytest pytest-cov
 ```
 
-2. 執行所有測試：
+2. 設定 Python 路徑：
 ```bash
-pytest tests/
+# Linux/macOS
+export PYTHONPATH=$PYTHONPATH:/path/to/memory_tree
+
+# Windows
+set PYTHONPATH=%PYTHONPATH%;C:\path\to\memory_tree
 ```
 
-3. 執行特定測試檔案：
+3. 執行所有測試：
 ```bash
+# 在專案根目錄執行
+pytest
+
+# 顯示詳細測試過程
+pytest -v
+
+# 顯示 print 輸出
+pytest -s
+
+# 同時顯示詳細過程和輸出
+pytest -vs
+```
+
+4. 執行特定測試：
+```bash
+# 執行特定測試檔案
 pytest tests/test_data_generation.py
+
+# 執行特定測試函式
+pytest tests/test_data_generation.py::test_generate_output_file_exists
+
+# 執行符合特定名稱的測試
+pytest -k "test_memory"
 ```
 
-4. 詳細測試輸出：
+5. 測試覆蓋率報告：
 ```bash
-pytest -v tests/
+# 產生覆蓋率報告
+pytest --cov=.
+
+# 產生 HTML 格式覆蓋率報告
+pytest --cov=. --cov-report=html
 ```
 
-5. 查看測試覆蓋率：
-```bash
-pytest --cov=. tests/
-```
+6. 故障排除：
+- 確認在專案根目錄執行測試
+- 確認已建立 data 目錄
+- 檢查 Python 路徑設定
+
+測試案例說明：
+- 資料生成測試：確認可正確產生測試資料
+- 欄位完整性測試：確認必要欄位存在
+- 記憶體限制測試：確認不超過各區域容量
+- 成本計算測試：驗證計算公式正確性
 
 測試檢查項目：
 - 資料生成功能

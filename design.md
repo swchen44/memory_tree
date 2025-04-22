@@ -1,6 +1,29 @@
 # Symbol Memory Dashboard 系統設計
 
 ## 系統架構總覽
+
+目前實作的功能模組：
+1. 全域篩選器
+   - 記憶體區域
+   - 模組
+   - 資料夾
+   - 檔案
+   - Section
+   - 即時性需求
+   - 硬體使用
+
+2. 分析頁面
+   - 成本分析（Tab 1）
+   - 記憶體分布（Tab 2）
+   - 異常分析（Tab 3）
+   - 詳細資料（Tab 4）
+
+3. 異常檢測規則
+   - High Realtime in ext_memory
+   - Low Realtime in high-cost memory
+   - Hardware usage in ext_memory
+   - Realtime vs Access Count 不一致
+
 系統採用三層式架構，分別為前端展示層、後端分析層和資料儲存層。主要考量：
 - 資料處理與視覺化解耦
 - 便於擴充新的分析規則

@@ -12,10 +12,15 @@ Author: swchen.tw
 Version: 1.0.0
 """
 
+import sys
 import os
+
+# 將專案根目錄加入 Python 路徑
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from data_generation import generate_symbol_data
 import pandas as pd
 import pytest
-from data_generation import generate_symbol_data
 
 def test_generate_output_file_exists():
     """
