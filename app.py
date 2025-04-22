@@ -185,6 +185,18 @@ if realtime_filter:
 if hw_usage_filter:
     df_filtered = df_filtered[df_filtered["symbol_hw_usage"].isin(hw_usage_filter)]
 
+# 將篩選後的資料存入 session state
+st.session_state['filtered_data'] = df_filtered
+st.session_state['filter_conditions'] = {
+    'memory': memory_filter,
+    'module': module_filter,
+    'folder': folder_filter,
+    'file': file_filter,
+    'section': section_filter,
+    'realtime': realtime_filter,
+    'hw_usage': hw_usage_filter
+}
+
 # 顯示篩選結果統計
 st.info(f"篩選後資料筆數: {len(df_filtered)} / 總筆數: {len(symbol_df)}")
 
