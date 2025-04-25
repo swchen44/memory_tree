@@ -44,13 +44,15 @@ FOLDER_NAMES = [
     "open_base/hal", "open_base/prj_ram", "open_base/exthal"
 ]
 
-def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
+def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv", day=1, prev_data=None):
     """
     產生模擬的符號記憶體配置資料。
 
     Args:
         num_symbols (int, optional): 要產生的符號數量. 預設為1500.
         outfile (str, optional): 輸出CSV檔案路徑. 預設為"data/symbols.csv".
+        day (int, optional): 第幾天的資料. 預設為1.
+        prev_data (pd.DataFrame, optional): 前一天的資料. 預設為None.
 
     Returns:
         pd.DataFrame: 包含以下欄位的DataFrame：
@@ -76,7 +78,7 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
         - ext_memory2: 1MB
     """
     logger = setup_logging()
-    logger.info(f"Generating {num_symbols} synthetic symbols...")
+    logger.info(f"Generating {num_symbols} synthetic symbols for day {day}...")
 
     # 記憶體配置與權重定義
     memory_weights = {
@@ -101,58 +103,62 @@ def generate_symbol_data(num_symbols=1500, outfile="data/symbols.csv"):
     realtime_levels = ["High", "Medium", "Low"]
     output_section_types = ["code", "data", "init", "always_power_on", "ro_after_write"]
     
-    # 產生符號資料
     records = []
     memory_usage = {mem: 0 for mem in memory_types}
     
-    for i in range(num_symbols):
-        # 基本符號資訊
-        symbol_name = f"symbol_{i}"
-        module = random.choice(modules)
-        filename = random.choice(filenames)
-        
-        # 記憶體配置相關
-        size = np.random.randint(16, 2048)  # 16B ~ 2KB
-        memory = random.choices(memory_types, weights=[memory_weights[m] for m in memory_types])[0]
-        
-        # 檢查記憶體限制
-        if memory_usage[memory] + size > memory_max_size[memory]:
-            continue
-        memory_usage[memory] += size
-        
-        # 其他屬性
-        input_section = random.choice(["code", "data", "bss"])
-        out_section = f"{memory}_{'code' if input_section == 'code' else 'data'}"
-        address = hex(np.random.randint(0x80000000, 0x8FFFFFFF))
-        output_section = random.choice(output_section_types)
-        realtime = random.choices(realtime_levels, weights=[2, 3, 5])[0]
-        access_count = np.random.randint(0, 101)
-        hw_usage = random.choice(["Yes", "No"])
-        
-        records.append({
-            "symbol_name": symbol_name,
-            "symbol_module": module,
-            "symbol_filename": filename,
-            "input_section": input_section,
-            "symbol_size": size,
-            "symbol_address": address,
-            "symbol_physical_memory": memory,
-            "symbol_out_section": out_section,
-            "symbol_output_section": output_section,
-            "symbol_realtime": realtime,
-            "symbol_access_count": access_count,
-            "symbol_hw_usage": hw_usage,
-            "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
-        })
-
-    # 確保產生足夠的資料
-    while len(records) < num_symbols:
-        size = np.random.randint(16, 128)  # 產生較小的符號
-        memory = random.choices(memory_types, weights=[memory_weights[m] for m in memory_types])[0]
-        if memory_usage[memory] + size <= memory_max_size[memory]:
-            # 加入新的小符號
-            records.append(generate_small_symbol(size, memory, memory_weights, modules, filenames))
+    if prev_data is not None:
+        # 第二天開始：只修改 size，其他屬性保持不變
+        for _, row in prev_data.iterrows():
+            variation = random.uniform(0, 0.02)  # 0% to 2%
+            new_size = int(row['symbol_size'] * (1 + variation))
+            new_size = max(16, min(2048, new_size))  # 確保在合理範圍內
+            
+            # 檢查記憶體限制
+            if memory_usage[row['symbol_physical_memory']] + new_size > memory_max_size[row['symbol_physical_memory']]:
+                continue
+                
+            memory_usage[row['symbol_physical_memory']] += new_size
+            
+            new_record = row.to_dict()
+            new_record['symbol_size'] = new_size
+            records.append(new_record)
+    else:
+        # 第一天：產生初始資料
+        for i in range(num_symbols):
+            symbol_name = f"symbol_{i}"
+            module = random.choice(modules)
+            filename = random.choice(filenames)
+            size = np.random.randint(16, 2048)  # 16B ~ 2KB
+            memory = random.choices(memory_types, weights=[memory_weights[m] for m in memory_types])[0]
+            
+            # 檢查記憶體限制
+            if memory_usage[memory] + size > memory_max_size[memory]:
+                continue
             memory_usage[memory] += size
+            
+            input_section = random.choice(["code", "data", "bss"])
+            out_section = f"{memory}_{'code' if input_section == 'code' else 'data'}"
+            address = hex(np.random.randint(0x80000000, 0x8FFFFFFF))
+            output_section = random.choice(output_section_types)
+            realtime = random.choices(realtime_levels, weights=[2, 3, 5])[0]
+            access_count = np.random.randint(0, 101)
+            hw_usage = random.choice(["Yes", "No"])
+            
+            records.append({
+                "symbol_name": symbol_name,
+                "symbol_module": module,
+                "symbol_filename": filename,
+                "input_section": input_section,
+                "symbol_size": size,
+                "symbol_address": address,
+                "symbol_physical_memory": memory,
+                "symbol_out_section": out_section,
+                "symbol_output_section": output_section,
+                "symbol_realtime": realtime,
+                "symbol_access_count": access_count,
+                "symbol_hw_usage": hw_usage,
+                "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
+            })
 
     os.makedirs(os.path.dirname(outfile), exist_ok=True)
     df = pd.DataFrame(records)
@@ -195,5 +201,89 @@ def generate_small_symbol(size, memory, memory_weights, modules, filenames):
         "symbol_folder_name_for_file": random.choice(FOLDER_NAMES)
     }
 
+def generate_daily_data(project_name, start_date="2024-01-01", end_date="2024-01-07", num_symbols=1500):
+    """
+    產生指定專案和日期範圍的符號資料。
+
+    Args:
+        project_name (str): 專案名稱
+        start_date (str): 開始日期 (YYYY-MM-DD格式)
+        end_date (str): 結束日期 (YYYY-MM-DD格式)
+        num_symbols (int): 每天的符號數量
+
+    Returns:
+        dict: 包含所有產生的DataFrame的字典，以日期為key
+    """
+    from datetime import datetime, timedelta
+
+    # 轉換日期字串為datetime物件
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+    
+    base_path = os.path.join("data", project_name)
+    all_data = {}
+    prev_data = None
+    current_date = start
+
+    # 逐日產生資料
+    day_count = 1
+    while current_date <= end:
+        date_str = current_date.strftime("%Y-%m-%d")
+        # 為每天建立獨立資料夾
+        daily_path = os.path.join(base_path, date_str)
+        os.makedirs(daily_path, exist_ok=True)
+        
+        outfile = os.path.join(daily_path, "symbols.csv")
+        df = generate_symbol_data(num_symbols, outfile, day_count, prev_data)
+        all_data[date_str] = df
+        prev_data = df
+        
+        current_date += timedelta(days=1)
+        day_count += 1
+
+    return all_data
+
 if __name__ == "__main__":
-    generate_symbol_data()
+    import argparse
+    
+    # 建立說明文件
+    description = '''
+生成符號記憶體配置的模擬資料
+
+使用範例:
+    # 基本用法 - 使用預設日期範圍
+    python data_generation.py -p project1
+    
+    # 指定日期範圍
+    python data_generation.py -p project2 -s 2024-02-01 -e 2024-02-28
+    
+    # 完整參數使用
+    python data_generation.py -p project3 -s 2024-03-01 -e 2024-03-31 -n 2000
+
+輸出結構:
+    data/
+    └── project_name/
+        ├── 2024-01-01/
+        │   └── symbols.csv
+        ├── 2024-01-02/
+        │   └── symbols.csv
+        └── ...
+    '''
+    
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument('--project', '-p', required=True, help='專案名稱')
+    parser.add_argument('--start', '-s', default='2024-01-01', help='開始日期 (YYYY-MM-DD)')
+    parser.add_argument('--end', '-e', default='2024-01-07', help='結束日期 (YYYY-MM-DD)')
+    parser.add_argument('--symbols', '-n', type=int, default=1500, help='每天的符號數量')
+    
+    args = parser.parse_args()
+    generate_daily_data(
+        project_name=args.project,
+        start_date=args.start,
+        end_date=args.end,
+        num_symbols=args.symbols
+    )
